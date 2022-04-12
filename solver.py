@@ -5,11 +5,10 @@ import numpy as np
 import grids
 
 
-def solve(grid, randomise_guesses=False):
-    global backtracks
+def solve(grid, backtracks, randomise_guesses=False):
     empty_square_pos = find_empty_square(grid)
     if not empty_square_pos:
-        return True
+        return (True, backtracks)
     else:
         row, col = empty_square_pos
     guess_array = np.arange(1, 10)
@@ -18,13 +17,14 @@ def solve(grid, randomise_guesses=False):
     for i in guess_array:
         if is_valid(grid, i, (row, col)):
             grid[row][col] = i
-            if solve(grid, randomise_guesses):
-                return True
+            solved, backtracks = solve(grid, backtracks, randomise_guesses)
+            if solved:
+                return (True, backtracks)
             else:
                 # Backtrack
                 grid[row][col] = 0
                 backtracks = backtracks + 1
-    return False
+    return (False, backtracks)
 
 
 def is_valid(grid, num, pos):
@@ -67,7 +67,7 @@ def find_empty_square(grid):
     return None
 
 
-quiz_count = 1000
+quiz_count = 1
 quizzes, solutions = grids.get_grids(quiz_count)
 repetitions = 10
 total_backtracks = 0
@@ -79,7 +79,7 @@ for quiz_index in range(len(quizzes)):
         grid_to_solve = deepcopy(quizzes[quiz_index])
         # print_grid(grid_to_solve)
         backtracks = 0
-        solved = solve(grid_to_solve, randomise_guess_array)
+        solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array)
         print("> QUIZ " + str(quiz_index) + " RESULT:")
         # Compare the result to solution
         if solved is True:
