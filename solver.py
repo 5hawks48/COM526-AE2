@@ -28,6 +28,13 @@ def solve(grid, backtracks, randomise_guesses=False):
 
 
 def is_valid(grid, num, pos):
+    """
+    Check the row, column and 3x3 box (excluding pos) for number.
+    :param grid:
+    :param num:
+    :param pos:
+    :return: True if no match found (valid).
+    """
     # Check row
     for i in range(len(grid[0])):
         if grid[pos[0]][i] == num and pos[1] != i:
@@ -60,6 +67,11 @@ def print_grid(grid):
 
 
 def find_empty_square(grid):
+    """
+    Searches a grid from left-right, top-bottom for 0.
+    :param grid:
+    :return: row, col
+    """
     for row in range(len(grid)):
         for col in range(len(grid[0])):
             if grid[row][col] == 0:
@@ -67,37 +79,38 @@ def find_empty_square(grid):
     return None
 
 
-quiz_count = 1
-quizzes, solutions = grids.get_grids(quiz_count)
-repetitions = 10
-total_backtracks = 0
-randomise_guess_array = True
+if __name__ == "__main__":
+    quiz_count = 1
+    quizzes, solutions = grids.get_grids(quiz_count)
+    repetitions = 1
+    total_backtracks = 0
+    randomise_guess_array = True
 
-for quiz_index in range(len(quizzes)):
-    total_backtracks_for_quiz = 0
-    for j in range(repetitions):
-        grid_to_solve = deepcopy(quizzes[quiz_index])
-        # print_grid(grid_to_solve)
-        backtracks = 0
-        solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array)
-        print("> QUIZ " + str(quiz_index) + " RESULT:")
-        # Compare the result to solution
-        if solved is True:
-            print(">> IS SOLVED")
-            if not np.array_equal(grid_to_solve, solutions[quiz_index]):
-                print(">> BUT IT DIDN'T MATCH THE SOLUTION")
-        else:
-            print(">> CANNOT BE SOLVED!!!")
-        # Display the result
-        # print_grid(grid_to_solve)
-        print(">>>> Backtracks = " + str(backtracks))
-        total_backtracks += backtracks
-        total_backtracks_for_quiz += backtracks
-    avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions
-    print(">>>>>> Average backtracks for quiz " + str(quiz_index) + ": = " + str(avg_backtracks_for_quiz))
+    for quiz_index in range(len(quizzes)):
+        total_backtracks_for_quiz = 0
+        for i in range(repetitions):
+            grid_to_solve = deepcopy(quizzes[quiz_index])
+            # print_grid(grid_to_solve)
+            backtracks = 0
+            solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array)
+            print("> QUIZ " + str(quiz_index) + " RESULT:")
+            # Compare the result to solution
+            if solved is True:
+                print(">> IS SOLVED")
+                if not np.array_equal(grid_to_solve, solutions[quiz_index]):
+                    print(">> BUT IT DIDN'T MATCH THE SOLUTION")
+            else:
+                print(">> CANNOT BE SOLVED!!!")
+            # Display the result
+            # print_grid(grid_to_solve)
+            print(">>>> Backtracks = " + str(backtracks))
+            total_backtracks += backtracks
+            total_backtracks_for_quiz += backtracks
+        avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions
+        print(">>>>>> Average backtracks for quiz " + str(quiz_index) + ": = " + str(avg_backtracks_for_quiz))
 
-avg_backtracks = total_backtracks / (repetitions * quiz_count)
-print("Average backtracks for all = " + str(avg_backtracks))
+    avg_backtracks = total_backtracks / (repetitions * quiz_count)
+    print("Average backtracks for all = " + str(avg_backtracks))
 
 
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
