@@ -1,3 +1,5 @@
+import numpy as np
+
 board = [
     [7, 8, 0, 4, 0, 0, 1, 2, 0],
     [6, 0, 0, 0, 7, 5, 0, 0, 9],
@@ -60,3 +62,21 @@ unsolvable_grid = [
     [9, 0, 0, 4, 0, 0, 8, 0, 7],
     [0, 0, 1, 2, 5, 0, 3, 0, 0]
 ]
+
+
+def get_grids(amount):
+    quizzes = np.zeros((amount, 81), np.int32)
+    solutions = np.zeros((amount, 81), np.int32)
+    total = 0
+    for i, line in enumerate(open('sudoku.csv', 'r').read().splitlines()[1:]):
+        if total == amount:
+            break
+        total = total + 1
+        quiz, solution = line.split(",")
+        for j, q_s in enumerate(zip(quiz, solution)):
+            q, s = q_s
+            quizzes[i, j] = q
+            solutions[i, j] = s
+    quizzes = quizzes.reshape((-1, 9, 9))
+    solutions = solutions.reshape((-1, 9, 9))
+    return quizzes, solutions

@@ -1,22 +1,29 @@
+from copy import deepcopy
+
+import numpy as np
+
 import grids
 
-backtracks = 0
 
-
-def solve(grid):
+def solve(grid, randomise_guesses=False):
     global backtracks
     empty_square_pos = find_empty_square(grid)
     if not empty_square_pos:
         return True
     else:
         row, col = empty_square_pos
-    for i in range(1, 10):
+    guess_array = np.arange(1, 10)
+    if randomise_guesses:
+        np.random.shuffle(guess_array)
+    for i in guess_array:
         if is_valid(grid, i, (row, col)):
             grid[row][col] = i
-            if solve(grid):
+            if solve(grid, randomise_guesses):
                 return True
-            grid[row][col] = 0
-    backtracks = backtracks + 1
+            else:
+                # Backtrack
+                grid[row][col] = 0
+                backtracks = backtracks + 1
     return False
 
 
@@ -60,10 +67,37 @@ def find_empty_square(grid):
     return None
 
 
-print_grid(grids.board)
-solved = solve(grids.board)
-print(">>>>>> SOLUTION")
-if (solved == False):
-    print(">>>>>> CANNOT BE SOLVED!!!")
-print_grid(grids.board)
-print("Backtracks = " + str(backtracks))
+quiz_count = 1000
+quizzes, solutions = grids.get_grids(quiz_count)
+repetitions = 10
+total_backtracks = 0
+randomise_guess_array = True
+
+for quiz_index in range(len(quizzes)):
+    total_backtracks_for_quiz = 0
+    for j in range(repetitions):
+        grid_to_solve = deepcopy(quizzes[quiz_index])
+        # print_grid(grid_to_solve)
+        backtracks = 0
+        solved = solve(grid_to_solve, randomise_guess_array)
+        print("> QUIZ " + str(quiz_index) + " RESULT:")
+        # Compare the result to solution
+        if solved is True:
+            print(">> IS SOLVED")
+            if not np.array_equal(grid_to_solve, solutions[quiz_index]):
+                print(">> BUT IT DIDN'T MATCH THE SOLUTION")
+        else:
+            print(">> CANNOT BE SOLVED!!!")
+        # Display the result
+        # print_grid(grid_to_solve)
+        print(">>>> Backtracks = " + str(backtracks))
+        total_backtracks += backtracks
+        total_backtracks_for_quiz += backtracks
+    avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions
+    print(">>>>>> Average backtracks for quiz " + str(quiz_index) + ": = " + str(avg_backtracks_for_quiz))
+
+avg_backtracks = total_backtracks / (repetitions * quiz_count)
+print("Average backtracks for all = " + str(avg_backtracks))
+
+
+# TODO: Use the 3m puzzle set as it includes difficulty ratings + more
