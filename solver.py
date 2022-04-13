@@ -79,16 +79,16 @@ def find_empty_square(grid):
     return None
 
 
-if __name__ == "__main__":
+def main():
     quiz_count = 1
     quizzes, solutions = grids.get_grids(quiz_count)
-    repetitions = 1
+    repetitions_per_quiz = 1
     total_backtracks = 0
     randomise_guess_array = True
 
     for quiz_index in range(len(quizzes)):
         total_backtracks_for_quiz = 0
-        for i in range(repetitions):
+        for i in range(repetitions_per_quiz):
             grid_to_solve = deepcopy(quizzes[quiz_index])
             # print_grid(grid_to_solve)
             backtracks = 0
@@ -106,11 +106,37 @@ if __name__ == "__main__":
             print(">>>> Backtracks = " + str(backtracks))
             total_backtracks += backtracks
             total_backtracks_for_quiz += backtracks
-        avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions
+        avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions_per_quiz
         print(">>>>>> Average backtracks for quiz " + str(quiz_index) + ": = " + str(avg_backtracks_for_quiz))
 
-    avg_backtracks = total_backtracks / (repetitions * quiz_count)
+    avg_backtracks = total_backtracks / (repetitions_per_quiz * quiz_count)
     print("Average backtracks for all = " + str(avg_backtracks))
 
+
+def benchmark_time():
+    import time
+    quizzes, solutions = grids.get_grids(50)
+    print("Starting benchmark w/ time")
+    start_time = time.perf_counter()
+    for quiz_index in range(len(quizzes)):
+        backtracks = 0
+        solve(quizzes[quiz_index], backtracks, False)
+    print("--- %s seconds ---" % (time.perf_counter() - start_time))
+
+
+def benchmark_timeit(quizzes):
+    for quiz_index in range(len(quizzes)):
+        backtracks = 0
+        solve(quizzes[quiz_index], backtracks, False)
+
+
+if __name__ == "__main__":
+    # import timeit
+    # print("Starting benchmark w/ timeit")
+    # quizzes, solutions = grids.get_grids(7500)
+    # t = timeit.Timer(lambda: benchmark_timeit(quizzes))
+    # print("--- %s seconds ---" % t.timeit(1))
+    benchmark_time()
+    # main()
 
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
