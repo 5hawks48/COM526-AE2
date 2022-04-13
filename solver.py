@@ -1,3 +1,4 @@
+import csv
 from copy import deepcopy
 
 import numpy as np
@@ -80,12 +81,11 @@ def find_empty_square(grid):
 
 
 def main():
-    quiz_count = 1
+    quiz_count = 7500
     quizzes, solutions = grids.get_grids(quiz_count)
     repetitions_per_quiz = 1
     total_backtracks = 0
-    randomise_guess_array = True
-
+    randomise_guess_array = False
     for quiz_index in range(len(quizzes)):
         total_backtracks_for_quiz = 0
         for i in range(repetitions_per_quiz):
@@ -115,13 +115,36 @@ def main():
 
 def benchmark_time():
     import time
-    quizzes, solutions = grids.get_grids(50)
+    quiz_count = 7500
+    randomise_guess_array = False
+    quizzes, solutions = grids.get_grids(quiz_count)
+    total_backtracks = 0
+    max_backtracks = 0
+    outputs = [0 for _ in range(8)]
+    outputs[0] = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
+    outputs[1] = quiz_count
+    outputs[2] = randomise_guess_array
     print("Starting benchmark w/ time")
     start_time = time.perf_counter()
     for quiz_index in range(len(quizzes)):
         backtracks = 0
-        solve(quizzes[quiz_index], backtracks, False)
-    print("--- %s seconds ---" % (time.perf_counter() - start_time))
+        solved, backtracks = solve(quizzes[quiz_index], backtracks, randomise_guess_array)
+        total_backtracks = total_backtracks + backtracks
+        if backtracks > max_backtracks:
+            max_backtracks = backtracks
+    elapsed_time = (time.perf_counter() - start_time)
+    average_backtracks = (total_backtracks / quiz_count)
+    print("--- %s seconds ---" % elapsed_time)
+    print("--- Average Backtracks =  %s ---" % average_backtracks)
+    print("--- Max Backtracks =  %s ---" % max_backtracks)
+    outputs[5] = average_backtracks
+    outputs[6] = max_backtracks
+    outputs[7] = elapsed_time
+    print(outputs)
+    with open('benchmarks.csv', 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(outputs)
 
 
 def benchmark_timeit(quizzes):
