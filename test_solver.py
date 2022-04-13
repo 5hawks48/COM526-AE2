@@ -1,10 +1,11 @@
 import unittest
 from copy import deepcopy
+from unittest import TestCase
 
 import numpy as np
 
 import grids
-from solver import find_empty_square, is_valid, solve
+from solver import find_empty_square, is_valid, solve, find_random_empty_square
 
 
 class Test(unittest.TestCase):
@@ -40,3 +41,10 @@ class Test(unittest.TestCase):
         self.assertEqual(backtracks, 135)
         self.assertTrue(np.array_equal(grid_to_solve, self.solutions[0]))
         self.assertTrue(solved)
+
+    def test_find_random_empty_square(self):
+        grid_to_solve = deepcopy(self.quizzes[0])
+        print(grid_to_solve)
+        pos = find_random_empty_square(grid_to_solve)
+        print(pos)
+        self.assertIsNotNone(pos)

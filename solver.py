@@ -6,8 +6,12 @@ import numpy as np
 import grids
 
 
-def solve(grid, backtracks, randomise_guesses=False):
-    empty_square_pos = find_empty_square(grid)
+def solve(grid, backtracks, randomise_guesses=False, randomise_search=False):
+    # Find empty square
+    if randomise_search:
+        empty_square_pos = find_random_empty_square(grid)
+    else:
+        empty_square_pos = find_empty_square(grid)
     if not empty_square_pos:
         return (True, backtracks)
     else:
@@ -18,7 +22,7 @@ def solve(grid, backtracks, randomise_guesses=False):
     for i in guess_array:
         if is_valid(grid, i, (row, col)):
             grid[row][col] = i
-            solved, backtracks = solve(grid, backtracks, randomise_guesses)
+            solved, backtracks = solve(grid, backtracks, randomise_guesses, randomise_search)
             if solved:
                 return (True, backtracks)
             else:
@@ -80,19 +84,37 @@ def find_empty_square(grid):
     return None
 
 
+def find_random_empty_square(grid):
+    """
+    Search the grid randomly for empty squares.
+    :param grid:
+    :return: row, col
+    """
+    rows = np.arange(0, len(grid))
+    cols = np.arange(0, len(grid[0]))
+    np.random.shuffle(rows)
+    np.random.shuffle(cols)
+    for row in rows:
+        for col in cols:
+            if grid[row][col] == 0:
+                return row, col
+    return None
+
+
 def main():
-    quiz_count = 7500
+    quiz_count = 1
     quizzes, solutions = grids.get_grids(quiz_count)
     repetitions_per_quiz = 1
     total_backtracks = 0
     randomise_guess_array = False
+    randomise_search = True
     for quiz_index in range(len(quizzes)):
         total_backtracks_for_quiz = 0
         for i in range(repetitions_per_quiz):
             grid_to_solve = deepcopy(quizzes[quiz_index])
             # print_grid(grid_to_solve)
             backtracks = 0
-            solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array)
+            solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array, randomise_search)
             print("> QUIZ " + str(quiz_index) + " RESULT:")
             # Compare the result to solution
             if solved is True:
@@ -102,7 +124,7 @@ def main():
             else:
                 print(">> CANNOT BE SOLVED!!!")
             # Display the result
-            # print_grid(grid_to_solve)
+            print_grid(grid_to_solve)
             print(">>>> Backtracks = " + str(backtracks))
             total_backtracks += backtracks
             total_backtracks_for_quiz += backtracks
@@ -115,8 +137,9 @@ def main():
 
 def benchmark_time():
     import time
-    quiz_count = 7500
+    quiz_count = 1
     randomise_guess_array = False
+    randomise_search = True
     quizzes, solutions = grids.get_grids(quiz_count)
     total_backtracks = 0
     max_backtracks = 0
@@ -124,11 +147,12 @@ def benchmark_time():
     outputs[0] = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
     outputs[1] = quiz_count
     outputs[2] = randomise_guess_array
+    outputs[3] = randomise_search
     print("Starting benchmark w/ time")
     start_time = time.perf_counter()
     for quiz_index in range(len(quizzes)):
         backtracks = 0
-        solved, backtracks = solve(quizzes[quiz_index], backtracks, randomise_guess_array)
+        solved, backtracks = solve(quizzes[quiz_index], backtracks, randomise_guess_array, randomise_search)
         total_backtracks = total_backtracks + backtracks
         if backtracks > max_backtracks:
             max_backtracks = backtracks
@@ -150,7 +174,7 @@ def benchmark_time():
 def benchmark_timeit(quizzes):
     for quiz_index in range(len(quizzes)):
         backtracks = 0
-        solve(quizzes[quiz_index], backtracks, False)
+        solve(quizzes[quiz_index], backtracks, False, False)
 
 
 if __name__ == "__main__":
@@ -159,7 +183,7 @@ if __name__ == "__main__":
     # quizzes, solutions = grids.get_grids(7500)
     # t = timeit.Timer(lambda: benchmark_timeit(quizzes))
     # print("--- %s seconds ---" % t.timeit(1))
-    benchmark_time()
-    # main()
+    # benchmark_time()
+    main()
 
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
