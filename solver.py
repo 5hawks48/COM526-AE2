@@ -6,7 +6,18 @@ import numpy as np
 import grids
 
 
-def solve(grid, backtracks, randomise_guesses=False, randomise_search=False):
+from guess_generator import get_order_by_most_common, get_order_by_least_common, randomised_guesses, normal_guesses
+
+
+def solve(grid, backtracks, guess_method, randomise_search=False):
+    """
+    Sudoku Solver
+    :param grid:
+    :param backtracks:
+    :param guess_method: expects a method that returns an array of numbers 1 through 9.
+    :param randomise_search:
+    :return: Pass/Fail, No. of backtracks
+    """
     # Find empty square
     if randomise_search:
         empty_square_pos = find_random_empty_square(grid)
@@ -16,13 +27,11 @@ def solve(grid, backtracks, randomise_guesses=False, randomise_search=False):
         return (True, backtracks)
     else:
         row, col = empty_square_pos
-    guess_array = np.arange(1, 10)
-    if randomise_guesses:
-        np.random.shuffle(guess_array)
+    guess_array = guess_method(grid)
     for i in guess_array:
         if is_valid(grid, i, (row, col)):
             grid[row][col] = i
-            solved, backtracks = solve(grid, backtracks, randomise_guesses, randomise_search)
+            solved, backtracks = solve(grid, backtracks, guess_method, randomise_search)
             if solved:
                 return (True, backtracks)
             else:
@@ -101,20 +110,16 @@ def find_random_empty_square(grid):
     return None
 
 
-def main():
-    quiz_count = 1
+def main(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
     quizzes, solutions = grids.get_grids(quiz_count)
-    repetitions_per_quiz = 1
     total_backtracks = 0
-    randomise_guess_array = False
-    randomise_search = True
     for quiz_index in range(len(quizzes)):
         total_backtracks_for_quiz = 0
         for i in range(repetitions_per_quiz):
             grid_to_solve = deepcopy(quizzes[quiz_index])
             # print_grid(grid_to_solve)
             backtracks = 0
-            solved, backtracks = solve(grid_to_solve, backtracks, randomise_guess_array, randomise_search)
+            solved, backtracks = solve(grid_to_solve, backtracks, guess_method, randomise_search)
             print("> QUIZ " + str(quiz_index) + " RESULT:")
             # Compare the result to solution
             if solved is True:
@@ -135,55 +140,7 @@ def main():
     print("Average backtracks for all = " + str(avg_backtracks))
 
 
-def benchmark_time():
-    import time
-    quiz_count = 1
-    randomise_guess_array = False
-    randomise_search = True
-    quizzes, solutions = grids.get_grids(quiz_count)
-    total_backtracks = 0
-    max_backtracks = 0
-    outputs = [0 for _ in range(8)]
-    outputs[0] = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
-    outputs[1] = quiz_count
-    outputs[2] = randomise_guess_array
-    outputs[3] = randomise_search
-    print("Starting benchmark w/ time")
-    start_time = time.perf_counter()
-    for quiz_index in range(len(quizzes)):
-        backtracks = 0
-        solved, backtracks = solve(quizzes[quiz_index], backtracks, randomise_guess_array, randomise_search)
-        total_backtracks = total_backtracks + backtracks
-        if backtracks > max_backtracks:
-            max_backtracks = backtracks
-    elapsed_time = (time.perf_counter() - start_time)
-    average_backtracks = (total_backtracks / quiz_count)
-    print("--- %s seconds ---" % elapsed_time)
-    print("--- Average Backtracks =  %s ---" % average_backtracks)
-    print("--- Max Backtracks =  %s ---" % max_backtracks)
-    outputs[5] = average_backtracks
-    outputs[6] = max_backtracks
-    outputs[7] = elapsed_time
-    print(outputs)
-    with open('benchmarks.csv', 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',',
-                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(outputs)
-
-
-def benchmark_timeit(quizzes):
-    for quiz_index in range(len(quizzes)):
-        backtracks = 0
-        solve(quizzes[quiz_index], backtracks, False, False)
-
-
 if __name__ == "__main__":
-    # import timeit
-    # print("Starting benchmark w/ timeit")
-    # quizzes, solutions = grids.get_grids(7500)
-    # t = timeit.Timer(lambda: benchmark_timeit(quizzes))
-    # print("--- %s seconds ---" % t.timeit(1))
-    # benchmark_time()
-    main()
+    main(1, 1, normal_guesses, False)
 
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
