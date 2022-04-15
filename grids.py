@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 board = [
     [7, 8, 0, 4, 0, 0, 1, 2, 0],
@@ -81,3 +82,12 @@ def get_grids(amount):
         quizzes = quizzes.reshape((-1, 9, 9))
         solutions = solutions.reshape((-1, 9, 9))
     return quizzes, solutions
+
+
+def get_panda_grids(amount):
+    data = pd.read_csv("sudoku.csv", nrows=amount)
+    try:
+        data = pd.DataFrame({"quizzes": data["puzzle"], "solutions": data["solution"]})
+    except:
+        pass
+    return data

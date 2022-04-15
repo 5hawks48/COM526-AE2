@@ -18,3 +18,10 @@ class Test(TestCase):
             [0, 0, 0, 9, 0, 0, 0, 0, 0], [5, 0, 4, 0, 0, 2, 0, 0, 0], [6, 8, 9, 0, 0, 7, 1, 5, 0]
         ]
         self.assertTrue(np.array_equal(quizzes[999], grid_999))
+
+    def test_get_panda_grids(self):
+        amount = 1000
+        data = grids.get_panda_grids(amount)
+        self.assertEqual(len(data["quizzes"]), amount)
+        self.assertEqual(len(data["solutions"]), amount)
+        self.assertEqual(data["solutions"].size, amount)

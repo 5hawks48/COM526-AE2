@@ -2,9 +2,8 @@ import csv
 from copy import deepcopy
 
 import numpy as np
-
+import pandas as pd
 import grids
-
 
 from guess_generator import get_order_by_most_common, get_order_by_least_common, randomised_guesses, normal_guesses
 
@@ -136,11 +135,41 @@ def main(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
         avg_backtracks_for_quiz = total_backtracks_for_quiz / repetitions_per_quiz
         print(">>>>>> Average backtracks for quiz " + str(quiz_index) + ": = " + str(avg_backtracks_for_quiz))
 
-    avg_backtracks = total_backtracks / (repetitions_per_quiz * quiz_count)
+    avg_backtracks = total_backtracks / (repetitions_per_quiz * len(quizzes))
     print("Average backtracks for all = " + str(avg_backtracks))
 
 
+def parallelize_dataframe(df, func):
+    from multiprocessing import Pool
+    num_partitions = len(df)
+    num_cores = 4
+    df_split = np.vsplit(df, num_partitions)
+    pool = Pool(num_cores)
+    results = pool.map(func, df_split)
+    pool.close()
+    pool.join()
+    return results
+
+
+def solve_and_verify(data):
+    total_backtracks = 0
+    for row in data.iterrows():
+        backtracks = 0
+        quiz = np.fromiter(row[1]["quizzes"], dtype=int).reshape(9, 9)
+        solved, backtracks = solve(quiz, backtracks, normal_guesses, False)
+        assert solved is True
+        total_backtracks = total_backtracks + backtracks
+    return total_backtracks
+
+
+def run_multithreaded(quiz_count):
+    data = grids.get_panda_grids(quiz_count)
+    results = parallelize_dataframe(data.head(quiz_count), solve_and_verify)
+    return results
+
+
 if __name__ == "__main__":
-    main(1, 1, normal_guesses, False)
+    run_multithreaded(2)
+    # main(2, 1, normal_guesses, False)
 
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
