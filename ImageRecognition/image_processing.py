@@ -8,7 +8,7 @@ import random as rng
 
 def read_img():
     # I wanted the user to have the liberty to choose the image
-    image_url = "sudoku.jpg"
+    image_url = r"ImageRecognition\sudoku.jpg"
     # image url also conatins the image extension eg. .jpg or .png
     # reading in greayscale
     img = cv2.imread(image_url, cv2.IMREAD_GRAYSCALE)
@@ -39,7 +39,7 @@ def gaussian_blur(img):
 
 
 def find_contours(process):
-    ext_contours, hierarchy = cv2.findContours(process, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    ext_contours, hierarchy = cv2.findContours(process, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # for c in ext_contours:
     #     peri = cv2.arcLength(c, True)
@@ -59,40 +59,17 @@ def find_contours(process):
     return ext_contours
 
 
-# def find_corners(contours):
-#     largest_area = 0
-#     largest_points = []
-#     for c in contours:
-#         peri = cv2.arcLength(c, True)
-#         approx = cv2.approxPolyDP(c, 0.015 * peri, True)
-#         if len(approx) == 4:
-#             x = []
-#             y = []
-#             for point in c:
-#                 x.append(point[0][0])
-#                 y.append(point[0][1])
-#             area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-#             print(area)
-#             if area > largest_area:
-#                 largest_area = area
-#                 largest_points = (x, y)
-#             # Here we are looking for the largest 4 sided contour
-#     return largest_points
-
-
 def find_corners_approxPolyDP(ext_contours):
+    # ext_contours = ext_contours[0] if len(ext_contours) == 2 else ext_contours[1]
     cnts = sorted(ext_contours, key=cv2.contourArea, reverse=True)[:5]
     # loop over the contours
     for c in cnts:
         # approximate the contour
         peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        approx = cv2.approxPolyDP(c, 0.015 * peri, True)
         # if our approximated contour has four points, then we
         # can assume that we have found our screen
         if len(approx) == 4:
-            cornerImg = cv2.drawContours(img, approx, -1, (0, 255, 0), 3)
-            cv2.imshow("Corners", cornerImg)
-            cv2.waitKey(0)
             return approx
 
 
@@ -111,7 +88,7 @@ def find_corners_Ramer_Doughlas_Peucker(ext_contours):
     top_left, _ = min(enumerate([pt[0][0] + pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
     bottom_left, _ = min(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
     top_right, _ = max(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
-    return top_l, top_r, bottom_r, bottom_l
+    return top_left, top_right, bottom_right, bottom_left
 
 
 def crop_and_warp(image, ordered_corners, bottom_r, bottom_l, top_r, top_l):
@@ -131,7 +108,7 @@ def crop_and_warp(image, ordered_corners, bottom_r, bottom_l, top_r, top_l):
     return cv2.warpPerspective(image, grid, (width, height))
 
 
-def extract_cells(grid):
+def create_image_grid(grid):
     # here grid is the cropped image
 
     # grid = cv2.cvtColor(grid, cv2.COLOR_BGR2GRAY)  # VERY IMPORTANT
@@ -170,10 +147,45 @@ def extract_squares(grid):
     for i in range(9):
         for j in range(9):
             cv2.imwrite(str("BoardCells/cell" + str(i) + str(j) + ".jpg"), finalgrid[i][j])
-            return finalgrid
+    return finalgrid
 
 
-if __name__ == "__main__":
+def scale_and_centre(img, size, margin=20, background=0):
+    """Scales and centres an image onto a new background square."""
+    h, w = img.shape[:2]
+
+    def centre_pad(length):
+        """Handles centering for a given length that may be odd or even."""
+        if length % 2 == 0:
+            side1 = int((size - length) / 2)
+            side2 = side1
+        else:
+            side1 = int((size - length) / 2)
+            side2 = side1 + 1
+        return side1, side2
+
+    def scale(r, x):
+        return int(r * x)
+
+    if h > w:
+        t_pad = int(margin / 2)
+        b_pad = t_pad
+        ratio = (size - margin) / h
+        w, h = scale(ratio, w), scale(ratio, h)
+        l_pad, r_pad = centre_pad(w)
+    else:
+        l_pad = int(margin / 2)
+        r_pad = l_pad
+        ratio = (size - margin) / w
+        w, h = scale(ratio, w), scale(ratio, h)
+        t_pad, b_pad = centre_pad(h)
+
+    img = cv2.resize(img, (w, h))
+    img = cv2.copyMakeBorder(img, t_pad, b_pad, l_pad, r_pad, cv2.BORDER_CONSTANT, None, background)
+    return cv2.resize(img, (size, size))
+
+
+def extract():
     print("Read img")
     img = read_img()
     print("Gaussian blue img")
@@ -184,23 +196,28 @@ if __name__ == "__main__":
     contours = find_contours(process)
     print("Find corners")
     corners = find_corners_approxPolyDP(contours)
+    cornerImg = cv2.drawContours(img, corners, -1, (0, 255, 0), 3)
+    cv2.imshow("Corners", cornerImg)
+    cv2.waitKey(0)
+
     print("Extract points")
     top_l, top_r, bottom_r, bottom_l = extract_points(corners)
-
     top_l2, top_r2, bottom_r2, bottom_l2 = find_corners_Ramer_Doughlas_Peucker(contours)
 
     print("Crop and Warp")
     # Clockwise Corners
     ordered_corners = [top_l, top_r, bottom_r, bottom_l]
-    cropped_img = crop_and_warp(img, ordered_corners, bottom_r, bottom_l, top_r, top_l)
-    cv2.imshow('cropped_img', cropped_img)
+    transformed = crop_and_warp(img, ordered_corners, bottom_r, bottom_l, top_r, top_l)
+    cropped = r'ImageRecognition/cropped_img.png'
+    cv2.imwrite(cropped, transformed)
+    transformed = cv2.resize(transformed, (450, 450))
+    cv2.imshow(r'ImageRecognition/cropped_img', transformed)
     cv2.waitKey(0)
 
     print("Extract cells")
-    cells = extract_cells(cropped_img)
-    cv2.imshow('cell[2][0]', cells[2][0])
+    final_grid = create_image_grid(transformed)
+    cv2.imshow('cell[2][0]', final_grid[2][0])
     cv2.waitKey(0)
-
 
     # corners = find_corners(contours)
 
@@ -212,3 +229,8 @@ if __name__ == "__main__":
     # cv2.waitKey(0)
 
     cv2.destroyAllWindows()
+    return final_grid
+
+
+if __name__ == "__main__":
+    extract()

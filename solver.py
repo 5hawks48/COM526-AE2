@@ -4,6 +4,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import grids
+from ImageRecognition import image_processing, pasta
 
 from guess_generator import get_order_by_most_common, get_order_by_least_common, randomised_guesses, normal_guesses
 
@@ -169,7 +170,12 @@ def run_multithreaded(quiz_count):
 
 
 if __name__ == "__main__":
-    run_multithreaded(2)
+    # run_multithreaded(2)
     # main(2, 1, normal_guesses, False)
-
+    # final_grid = image_processing.extract()
+    final_grid = pasta.extract()
+    print("Tensor stuff")
+    from ImageRecognition.predict import extract_number_image
+    sudoku = extract_number_image(final_grid)
+    print_grid(sudoku)
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more
