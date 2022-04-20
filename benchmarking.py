@@ -84,8 +84,7 @@ def benchmark_multithread(quiz_count):
 
 
 if __name__ == '__main__':
-    quiz_count = 1000
+    quiz_count = 100
 
     benchmark_multithread(quiz_count)
-    benchmark_time(quiz_count, normal_guesses, False)
     benchmark_time(quiz_count, randomised_guesses, False)

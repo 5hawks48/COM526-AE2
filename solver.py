@@ -4,7 +4,6 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import grids
-from ImageRecognition import image_processing, pasta
 
 from guess_generator import get_order_by_most_common, get_order_by_least_common, randomised_guesses, normal_guesses
 
@@ -171,11 +170,32 @@ def run_multithreaded(quiz_count):
 
 if __name__ == "__main__":
     # run_multithreaded(2)
-    # main(2, 1, normal_guesses, False)
-    # final_grid = image_processing.extract()
-    final_grid = pasta.extract()
-    print("Tensor stuff")
-    from ImageRecognition.predict import extract_number_image
-    sudoku = extract_number_image(final_grid)
+    main(2, 1, normal_guesses, False)
+
+
+    print("Running")
+    # Sudoku extract
+    from ImageRecognition.image_processing import extract as extract_img_grid
+    from ImageRecognition.digit_recognition import run as create_and_save_Model
+    from ImageRecognition.predict import extract_number_image as sudoku_extracted
+
+    # Calling the image_prcoesses.py extract function to get a processed np.array of cells
+    image_grid = extract_img_grid(r'ImageRecognition/sudoku.jpg')
+    # image_grid = image_processing.extract()
+    print("Image Grid extracted")
+
+    # note we have alreday created and stored the model but if you want to do that again use the following command
+    # create_and_save_Model()
+
+    # Sudoku extract
+    sudoku = sudoku_extracted(image_grid)
+    print("Extracted and predict digits in the Sudoku")
+
+    print("\n\nSudoku:")
     print_grid(sudoku)
+
+    solved, backtracks = solve(sudoku, 0, randomised_guesses, False)
+    print("Solved = %s, %d" % (solved, backtracks))
+    print_grid(sudoku)
+    print("Program End")
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more

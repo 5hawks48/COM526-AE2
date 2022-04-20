@@ -1,12 +1,14 @@
 """
-Predict an image
-accepts image grid
-return predicted grid
+Image recognition for Sudoku puzzles based off of
+Article: https://becominghuman.ai/image-processing-sudokuai-opencv-45380715a629
+Article author: Aditi Jain
 """
 import cv2
+import numpy as np
 from tensorflow.python.keras.models import load_model
-# import matplotlib.pyplot as plt
-from ImageRecognition.image_processing import scale_and_centre
+import matplotlib.pyplot as plt
+
+from ImageRecognition.image_processing import scale_and_centre, order_corners, extract
 
 
 def display_image(img):
@@ -36,17 +38,13 @@ def extract_number_image(img_grid):
                 x, y, w, h = cv2.boundingRect(c)
 
                 if (x < 3 or y < 3 or h < 3 or w < 3):
-                    # Note the number is always placed in the center
-                    # Since image is 28x28
-                    # the number will be in the center thus x >3 and y>3
-                    # Additionally any of the external lines of the sudoku will not be thicker than 3
                     continue
                 ROI = gray[y:y + h, x:x + w]
                 ROI = scale_and_centre(ROI, 120)
                 # display_image(ROI)
 
                 # Writing the cleaned cells
-                cv2.imwrite("CleanedBoardCells/cell{}{}.png".format(i, j), ROI)
+                cv2.imwrite(r"ImageRecognition/CleanedBoardCells/cell{}{}.png".format(i, j), ROI)
                 tmp_sudoku[i][j] = predict(ROI)
 
     return tmp_sudoku
@@ -57,17 +55,15 @@ def predict(img_grid):
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # image = cv2.threshold(image, 140, 255, cv2.THRESH_BINARY)[1]
     image = cv2.resize(image, (28, 28))
-    # display_image(image)
     image = image.astype('float32')
     image = image.reshape(1, 28, 28, 1)
     image /= 255
-
     # plt.imshow(image.reshape(28, 28), cmap='Greys')
     # plt.show()
-    model = load_model(r'ImageRecognition\cnn.hdf5')
+    model = load_model(r'ImageRecognition/cnn.hdf5')
     pred = model.predict(image.reshape(1, 28, 28, 1), batch_size=1)
 
-    # print(pred.argmax())
+    # print("Predicted number: " + str(pred.argmax()))
 
     return pred.argmax()
 

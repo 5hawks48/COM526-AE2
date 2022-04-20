@@ -1,152 +1,165 @@
-import operator
-import os
+"""
+Image recognition for Sudoku puzzles based off of
+Article: https://becominghuman.ai/image-processing-sudokuai-opencv-45380715a629
+Article author: Aditi Jain
+"""
 
 import cv2
 import numpy as np
-import random as rng
 
 
-def read_img():
-    # I wanted the user to have the liberty to choose the image
-    image_url = r"ImageRecognition\sudoku.jpg"
-    # image url also conatins the image extension eg. .jpg or .png
-    # reading in greayscale
-    img = cv2.imread(image_url, cv2.IMREAD_GRAYSCALE)
-    cv2.imshow('image', img)
+def display_image(name, img):
+    cv2.imshow(name, img)
     cv2.waitKey(0)
-    return img
+    cv2.destroyWindow(name)
 
 
-def gaussian_blur(img):
-    processed_img = cv2.GaussianBlur(img.copy(), (9, 9), 0)
-
-    # cv2.adaptiveThreshold(src, maxValue, adaptiveMethod, thresholdType, blockSize, constant(c))
-    # blockSize – Size of a pixel neighborhood that is used to calculate a threshold value for the pixel: 3, 5, 7, and so on.
-    # C – Constant subtracted from the mean or weighted mean (see the details below). Normally, it is positive but may be zero or negative as well.
-    processed_img = cv2.adaptiveThreshold(processed_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-
-    processed_img = cv2.bitwise_not(processed_img, processed_img)
-
-    # np.uint8 will wrap.
-    # For example, 235+30 = 9.
+def invert_and_dilate(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Note that kernel sizes must be positive and odd and the kernel must be square.
+    process = cv2.GaussianBlur(img.copy(), (9, 9), 0)
+    process = cv2.adaptiveThreshold(process, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    process = cv2.bitwise_not(process, process)
     kernel = np.array([[0., 1., 0.], [1., 1., 1.], [0., 1., 0.]], np.uint8)
-    processed_img = cv2.dilate(processed_img, kernel)
-
-    cv2.imshow('inverted', processed_img)
-    cv2.waitKey(0)
-
-    return processed_img
+    process = cv2.dilate(process, kernel)
+    return process
 
 
-def find_contours(process):
-    ext_contours, hierarchy = cv2.findContours(process, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def find_corners(img):
+    ext_contours = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    ext_contours = ext_contours[0] if len(ext_contours) == 2 else ext_contours[1]
+    ext_contours = sorted(ext_contours, key=cv2.contourArea, reverse=True)
 
-    # for c in ext_contours:
-    #     peri = cv2.arcLength(c, True)
-    #     approx = cv2.approxPolyDP(c, 0.015 * peri, True)
-    #     if len(approx) == 4:
-    #         # Here we are looking for the largest 4 sided contour
-    #         break
-
-    # Draw contours
-    drawing = np.zeros((process.shape[0], process.shape[1], 3), dtype=np.uint8)
-    for i in range(len(ext_contours)):
-        color = (rng.randint(0, 256), rng.randint(0, 256), rng.randint(0, 256))
-        cv2.drawContours(drawing, ext_contours, i, color, 2, cv2.LINE_8, hierarchy, 0)
-    # Show in a window
-    cv2.imshow('Contours', drawing)
-    cv2.waitKey(0)
-    return ext_contours
-
-
-def find_corners_approxPolyDP(ext_contours):
-    # ext_contours = ext_contours[0] if len(ext_contours) == 2 else ext_contours[1]
-    cnts = sorted(ext_contours, key=cv2.contourArea, reverse=True)[:5]
-    # loop over the contours
-    for c in cnts:
-        # approximate the contour
+    # loop runs only once
+    for c in ext_contours:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.015 * peri, True)
-        # if our approximated contour has four points, then we
-        # can assume that we have found our screen
         if len(approx) == 4:
+            # Here we are looking for the largest 4 sided contour
             return approx
 
 
-def extract_points(corners):
-    # Extracting the points
-    corners = [(corner[0][0], corner[0][1]) for corner in corners]
-    top_r, top_l, bottom_l, bottom_r = corners[0], corners[1], corners[2], corners[3]
-    return top_l, top_r, bottom_r, bottom_l  # Index 0 - top-right
+# def Ramer_Doughlas_Peucker_algorithm(img):
+#     ext_contours = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#     ext_contours = ext_contours[0] if len(ext_contours) == 2 else ext_contours[1]
+#     ext_contours = sorted(ext_contours, key=cv2.contourArea, reverse=True)
+#     import operator
+#     bottom_r, _ = max(enumerate([pt[0][0] + pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
+#     top_l, _ = min(enumerate([pt[0][0] + pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
+#     bottom_l, _ = min(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
+#     top_r, _ = max(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
+#     return top_l, top_r, bottom_r, bottom_l
+
+
+def clockwise_corners(corners):
+    """
+    https://stackoverflow.com/a/51075698
+    -135* --> -180*
+    :param corners:
+    :return:
+    """
+    from functools import reduce
+    import operator
+    import math
+    coords = [(corner[0][0], corner[0][1]) for corner in corners]
+    center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), coords), [len(coords)] * 2))
+    ordered = sorted(coords, key=lambda coord: (-180 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
+    print(ordered)
+    top_l, top_r, bottom_r, bottom_l = ordered[0], ordered[1], ordered[2], ordered[3]
+    return top_l, top_r, bottom_r, bottom_l
+
+
+def anticlockwise_corners(corners):
+    return clockwise_corners(corners)[::-1]
+
+
+def order_corners(corners):
+    # Corners[0],... stores in format [[x y]]
+    # Separate corners into individual points
+    # Index 0 - top-right
     #       1 - top-left
     #       2 - bottom-left
     #       3 - bottom-right
+    print("Corners before:" + str(corners))
+    corners = [(corner[0][0], corner[0][1]) for corner in corners]
+    top_r, top_l, bottom_l, bottom_r = corners[0], corners[1], corners[2], corners[3]
+    print("Corners after:" + str([top_l, top_r, bottom_r, bottom_l]))
+    return top_l, top_r, bottom_r, bottom_l
 
 
-def find_corners_Ramer_Doughlas_Peucker(ext_contours):
-    bottom_right, _ = max(enumerate([pt[0][0] + pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
-    top_left, _ = min(enumerate([pt[0][0] + pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
-    bottom_left, _ = min(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
-    top_right, _ = max(enumerate([pt[0][0] - pt[0][1] for pt in ext_contours[0]]), key=operator.itemgetter(1))
-    return top_left, top_right, bottom_right, bottom_left
+def crop_and_warp(image, corners):
+    """
 
+    :param image:
+    :param corners:
+    :return:
+    """
+    # Order points in clockwise order
+    # ordered_corners = order_corners(corners)
+    # ordered_corners = clockwise_corners(corners)
+    ordered_corners = anticlockwise_corners(corners)
+    print(ordered_corners)
+    top_l, top_r, bottom_r, bottom_l = ordered_corners
 
-def crop_and_warp(image, ordered_corners, bottom_r, bottom_l, top_r, top_l):
     width_A = np.sqrt(((bottom_r[0] - bottom_l[0]) ** 2) + ((bottom_r[1] - bottom_l[1]) ** 2))
     width_B = np.sqrt(((top_r[0] - top_l[0]) ** 2) + ((top_r[1] - top_l[1]) ** 2))
     width = max(int(width_A), int(width_B))
     height_A = np.sqrt(((top_r[0] - bottom_r[0]) ** 2) + ((top_r[1] - bottom_r[1]) ** 2))
     height_B = np.sqrt(((top_l[0] - bottom_l[0]) ** 2) + ((top_l[1] - bottom_l[1]) ** 2))
     height = max(int(height_A), int(height_B))
-
     dimensions = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1],
                            [0, height - 1]], dtype="float32")
     # Convert to Numpy format
-    ordered_corners = np.array(ordered_corners, dtype="float32")  # calculate the perspective transform matrix and warp
+    ordered_corners = np.array(ordered_corners, dtype="float32")
+    # calculate the perspective transform matrix and warp
     # the perspective to grab the screen
     grid = cv2.getPerspectiveTransform(ordered_corners, dimensions)
     return cv2.warpPerspective(image, grid, (width, height))
 
 
-def create_image_grid(grid):
-    # here grid is the cropped image
-
-    # grid = cv2.cvtColor(grid, cv2.COLOR_BGR2GRAY)  # VERY IMPORTANT
-
-    # Adaptive thresholding the cropped grid and inverting it
-    grid = cv2.bitwise_not(cv2.adaptiveThreshold(grid, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 101, 1))
-    cv2.imshow('cells', grid)
-    cv2.waitKey(0)
-    grid = extract_squares(grid)
-    return grid
-
-
-def extract_squares(grid):
+def create_cells(img):
+    grid = np.copy(img)
     edge_h = np.shape(grid)[0]
     edge_w = np.shape(grid)[1]
     celledge_h = edge_h // 9
     celledge_w = np.shape(grid)[1] // 9
+
+    grid = cv2.cvtColor(grid, cv2.COLOR_BGR2GRAY)
+
+    # Adaptive thresholding the cropped grid and inverting it
+    # grid = cv2.bitwise_not(grid, grid)
+
+    # Adaptive thresholding the cropped grid and inverting it
+    grid = cv2.bitwise_not(cv2.adaptiveThreshold(grid, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 101, 1))
+
+    display_image("create_image_grid", grid)
+
     tempgrid = []
     for i in range(celledge_h, edge_h + 1, celledge_h):
         for j in range(celledge_w, edge_w + 1, celledge_w):
             rows = grid[i - celledge_h:i]
             tempgrid.append([rows[k][j - celledge_w:j] for k in range(len(rows))])
+
     # Creating the 9X9 grid of images
     finalgrid = []
     for i in range(0, len(tempgrid) - 8, 9):
-        finalgrid.append(tempgrid[i:i + 9])  # Converting all the cell images to np.array
+        finalgrid.append(tempgrid[i:i + 9])
+
+    # Converting all the cell images to np.array
     for i in range(9):
         for j in range(9):
             finalgrid[i][j] = np.array(finalgrid[i][j])
+
     try:
         for i in range(9):
             for j in range(9):
-                os.remove("BoardCells/cell" + str(i) + str(j) + ".jpg")
+                np.os.remove(r"ImageRecognition/BoardCells1/cell" + str(i) + str(j) + ".jpg")
     except:
         pass
     for i in range(9):
         for j in range(9):
-            cv2.imwrite(str("BoardCells/cell" + str(i) + str(j) + ".jpg"), finalgrid[i][j])
+            cv2.imwrite(str(r"ImageRecognition/BoardCells1/cell" + str(i) + str(j) + ".jpg"), finalgrid[i][j])
+
     return finalgrid
 
 
@@ -185,52 +198,15 @@ def scale_and_centre(img, size, margin=20, background=0):
     return cv2.resize(img, (size, size))
 
 
-def extract():
-    print("Read img")
-    img = read_img()
-    print("Gaussian blue img")
-    process = gaussian_blur(img)
-
-    # edges = cv2.Canny(process, 100, 200)
-    print("Find contours")
-    contours = find_contours(process)
-    print("Find corners")
-    corners = find_corners_approxPolyDP(contours)
-    cornerImg = cv2.drawContours(img, corners, -1, (0, 255, 0), 3)
-    cv2.imshow("Corners", cornerImg)
-    cv2.waitKey(0)
-
-    print("Extract points")
-    top_l, top_r, bottom_r, bottom_l = extract_points(corners)
-    top_l2, top_r2, bottom_r2, bottom_l2 = find_corners_Ramer_Doughlas_Peucker(contours)
-
-    print("Crop and Warp")
-    # Clockwise Corners
-    ordered_corners = [top_l, top_r, bottom_r, bottom_l]
-    transformed = crop_and_warp(img, ordered_corners, bottom_r, bottom_l, top_r, top_l)
+def extract(img_path):
+    img = cv2.imread(img_path)
+    processed_sudoku = invert_and_dilate(img)
+    corners = find_corners(processed_sudoku)
+    display_image("corners", cv2.drawContours(img, corners, -1, (0, 255, 0), 10))
+    transformed = crop_and_warp(img, corners)
+    display_image("transformed", transformed)
     cropped = r'ImageRecognition/cropped_img.png'
     cv2.imwrite(cropped, transformed)
     transformed = cv2.resize(transformed, (450, 450))
-    cv2.imshow(r'ImageRecognition/cropped_img', transformed)
-    cv2.waitKey(0)
-
-    print("Extract cells")
-    final_grid = create_image_grid(transformed)
-    cv2.imshow('cell[2][0]', final_grid[2][0])
-    cv2.waitKey(0)
-
-    # corners = find_corners(contours)
-
-    # ## Working edges algo
-    # contour = max(contours, key=len)
-    # print("Contour: " + str(contour))
-    # contourImg = cv2.drawContours(img, contour, -1, (0, 255, 0), 3)
-    # cv2.imshow("Contours", contourImg)
-    # cv2.waitKey(0)
-
-    cv2.destroyAllWindows()
-    return final_grid
-
-
-if __name__ == "__main__":
-    extract()
+    sudoku = create_cells(transformed)
+    return sudoku
