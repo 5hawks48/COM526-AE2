@@ -64,7 +64,7 @@ def clockwise_corners(corners):
     coords = [(corner[0][0], corner[0][1]) for corner in corners]
     center = tuple(map(operator.truediv, reduce(lambda x, y: map(operator.add, x, y), coords), [len(coords)] * 2))
     ordered = sorted(coords, key=lambda coord: (-180 - math.degrees(math.atan2(*tuple(map(operator.sub, coord, center))[::-1]))) % 360)
-    print(ordered)
+    # print(ordered)
     top_l, top_r, bottom_r, bottom_l = ordered[0], ordered[1], ordered[2], ordered[3]
     return top_l, top_r, bottom_r, bottom_l
 
@@ -98,7 +98,7 @@ def crop_and_warp(image, corners):
     # ordered_corners = order_corners(corners)
     # ordered_corners = clockwise_corners(corners)
     ordered_corners = anticlockwise_corners(corners)
-    print(ordered_corners)
+    # print(ordered_corners)
     top_l, top_r, bottom_r, bottom_l = ordered_corners
 
     width_A = np.sqrt(((bottom_r[0] - bottom_l[0]) ** 2) + ((bottom_r[1] - bottom_l[1]) ** 2))
@@ -153,12 +153,12 @@ def create_cells(img):
     try:
         for i in range(9):
             for j in range(9):
-                np.os.remove(r"ImageRecognition/BoardCells1/cell" + str(i) + str(j) + ".jpg")
+                np.os.remove(r"ImageRecognition/BoardCells/cell" + str(i) + str(j) + ".jpg")
     except:
         pass
     for i in range(9):
         for j in range(9):
-            cv2.imwrite(str(r"ImageRecognition/BoardCells1/cell" + str(i) + str(j) + ".jpg"), finalgrid[i][j])
+            cv2.imwrite(str(r"ImageRecognition/BoardCells/cell" + str(i) + str(j) + ".jpg"), finalgrid[i][j])
 
     return finalgrid
 
@@ -198,8 +198,7 @@ def scale_and_centre(img, size, margin=20, background=0):
     return cv2.resize(img, (size, size))
 
 
-def extract(img_path):
-    img = cv2.imread(img_path)
+def extract(img):
     processed_sudoku = invert_and_dilate(img)
     corners = find_corners(processed_sudoku)
     display_image("corners", cv2.drawContours(img, corners, -1, (0, 255, 0), 10))
@@ -210,3 +209,32 @@ def extract(img_path):
     transformed = cv2.resize(transformed, (450, 450))
     sudoku = create_cells(transformed)
     return sudoku
+
+
+def run(img_path, guess_type):
+    from ImageRecognition.digit_recognition import run as create_and_save_Model
+    from ImageRecognition.predict import extract_number_image as sudoku_extracted
+    import solver
+
+    print("Running image recognition...")
+    # Sudoku extract
+    # Calling the image_prcoesses.py extract function to get a processed np.array of cells
+    base_img = cv2.imread(img_path)
+    if base_img is None:
+        raise FileNotFoundError('The image with path "' + str(img_path) + '" could not be found')
+    image_grid = extract(base_img)
+    # image_grid = image_processing.extract()
+    print("Image Grid extracted...")
+
+    # note we have alreday created and stored the model but if you want to do that again use the following command
+    # create_and_save_Model()
+
+    # Sudoku extract
+    sudoku = sudoku_extracted(image_grid)
+    print("Extracted and predict digits in the Sudoku")
+    print("\n\nSudoku:")
+    solver.print_grid(sudoku)
+    solved, backtracks = solver.solve(sudoku, 0, guess_type, False)
+    print("Solved = %s, Backtracks =  %d" % (solved, backtracks))
+    solver.print_grid(sudoku)
+    print("Image recognition finished.")
