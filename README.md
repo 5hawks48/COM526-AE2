@@ -17,6 +17,8 @@
 
 1. Clone this repository
 2. Ensure the above packages are installed
+3. Download this [kaggle download](https://www.kaggle.com/datasets/bryanpark/sudoku) and save it to the project folder
+as "sudoku.csv".
 3. Run the code from within the code directory with:
 
         python menu.py
