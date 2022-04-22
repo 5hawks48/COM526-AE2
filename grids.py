@@ -12,7 +12,7 @@ board = [
     [1, 2, 0, 0, 0, 7, 4, 0, 0],
     [0, 4, 9, 2, 0, 6, 0, 0, 7]
 ]
-# 7, 8, 3, 4, 9 is where the first(?) backtrack happens. The 3 and the 9 mean the next square has no valid options.
+
 solved_board = [
     [7, 8, 5, 4, 3, 9, 1, 2, 6],
     [6, 1, 2, 8, 7, 5, 3, 4, 9],
@@ -25,7 +25,6 @@ solved_board = [
     [3, 4, 9, 2, 2, 6, 8, 5, 7]
 ]
 # https://boyet.com/blog/solving-sudoku-with-backtracking
-# Implementation has 5,882 backtracks for their code & for mine.
 boyet_grid = [
     [0, 6, 0, 0, 0, 0, 0, 9, 0],
     [9, 0, 0, 8, 7, 3, 0, 0, 1],
@@ -85,7 +84,7 @@ def get_grids(amount):
 
 
 def get_panda_grids(amount):
-    data = pd.read_csv("sudoku.csv", nrows=amount)
+    data = pd.read_csv("sudoku.csv", nrows=amount, skip_blank_lines=True)
     try:
         data = pd.DataFrame({"quizzes": data["puzzle"], "solutions": data["solution"]})
     except:

@@ -109,8 +109,41 @@ def find_random_empty_square(grid):
     return None
 
 
-def main(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
-    quizzes, solutions = grids.get_grids(quiz_count)
+def parallelize_dataframe(df, func):
+    from multiprocessing import Pool
+    num_partitions = len(df)
+    num_cores = 4
+    df_split = np.vsplit(df, num_partitions)
+    pool = Pool(num_cores)
+    results = pool.map(func, df_split)
+    pool.close()
+    pool.join()
+    return results
+
+
+def solve_and_verify(data):
+    total_backtracks = 0
+    for row in data.iterrows():
+        backtracks = 0
+        quiz = np.fromiter(row[1]["quizzes"], dtype=int).reshape(9, 9)
+        solved, backtracks = solve(quiz, backtracks, normal_guesses, False)
+        assert solved is True
+        total_backtracks = total_backtracks + backtracks
+    return total_backtracks
+
+
+def run_multithreaded(quiz_count):
+    # TODO: Specify guess type
+    data = grids.get_panda_grids(quiz_count)
+    results = parallelize_dataframe(data.head(quiz_count), solve_and_verify)
+    return results
+
+
+def run(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
+    try:
+        quizzes, solutions = grids.get_grids(quiz_count)
+    except ValueError:
+        raise ValueError("Error: Quiz count exceeded total quizzes!")
     total_backtracks = 0
     for quiz_index in range(len(quizzes)):
         total_backtracks_for_quiz = 0
@@ -139,63 +172,4 @@ def main(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
     print("Average backtracks for all = " + str(avg_backtracks))
 
 
-def parallelize_dataframe(df, func):
-    from multiprocessing import Pool
-    num_partitions = len(df)
-    num_cores = 4
-    df_split = np.vsplit(df, num_partitions)
-    pool = Pool(num_cores)
-    results = pool.map(func, df_split)
-    pool.close()
-    pool.join()
-    return results
-
-
-def solve_and_verify(data):
-    total_backtracks = 0
-    for row in data.iterrows():
-        backtracks = 0
-        quiz = np.fromiter(row[1]["quizzes"], dtype=int).reshape(9, 9)
-        solved, backtracks = solve(quiz, backtracks, normal_guesses, False)
-        assert solved is True
-        total_backtracks = total_backtracks + backtracks
-    return total_backtracks
-
-
-def run_multithreaded(quiz_count):
-    data = grids.get_panda_grids(quiz_count)
-    results = parallelize_dataframe(data.head(quiz_count), solve_and_verify)
-    return results
-
-
-if __name__ == "__main__":
-    # run_multithreaded(2)
-    main(2, 1, normal_guesses, False)
-
-
-    print("Running")
-    # Sudoku extract
-    from ImageRecognition.image_processing import extract as extract_img_grid
-    from ImageRecognition.digit_recognition import run as create_and_save_Model
-    from ImageRecognition.predict import extract_number_image as sudoku_extracted
-
-    # Calling the image_prcoesses.py extract function to get a processed np.array of cells
-    image_grid = extract_img_grid(r'ImageRecognition/sudoku.jpg')
-    # image_grid = image_processing.extract()
-    print("Image Grid extracted")
-
-    # note we have alreday created and stored the model but if you want to do that again use the following command
-    # create_and_save_Model()
-
-    # Sudoku extract
-    sudoku = sudoku_extracted(image_grid)
-    print("Extracted and predict digits in the Sudoku")
-
-    print("\n\nSudoku:")
-    print_grid(sudoku)
-
-    solved, backtracks = solve(sudoku, 0, randomised_guesses, False)
-    print("Solved = %s, %d" % (solved, backtracks))
-    print_grid(sudoku)
-    print("Program End")
 # TODO: Use the 3m puzzle set as it includes difficulty ratings + more

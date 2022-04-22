@@ -81,6 +81,7 @@ def benchmark_multithread(quiz_count):
         writer = csv.writer(csv_file, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(outputs)
+        print("Results saved!")
 
 
 if __name__ == '__main__':
