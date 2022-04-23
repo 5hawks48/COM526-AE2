@@ -2,13 +2,13 @@
 
 ## System Requirements
 
-1. [Python](https://www.python.org/) installation ( > 3.8.0 )
+1. [Python](https://www.python.org/) installation ( ≥ 3.8.0 )
 2. Install the following Python packages and their dependencies:
-    * [numpy](https://www.numpy.org) ( > 1.19.5 )
-    * [pandas](https://pandas.pydata.org) ( > v 1.4.2 )
-    * [opencv-python](https://github.com/skvark/opencv-python) ( > 4.5.5.64 )
-    * [matplotlib](https://matplotlib.org) ( > 3.5.1 )
-    * [scikit-learn](http://scikit-learn.org) ( > 1.0.2 )
+    * [numpy](https://www.numpy.org) ( ≥ 1.19.5 )
+    * [pandas](https://pandas.pydata.org) ( ≥ v 1.4.2 )
+    * [opencv-python](https://github.com/skvark/opencv-python) ( ≥ 4.5.5.64 )
+    * [matplotlib](https://matplotlib.org) ( ≥ 3.5.1 )
+    * [scikit-learn](http://scikit-learn.org) ( ≥ 1.0.2 )
 3. (Optional) For image recognition functions:
     * [tensorflow](https://www.tensorflow.org/) ( **2.4.2** ). Detailed instructions can be found 
     [here](https://www.tensorflow.org/install/pip) and [here](https://www.tensorflow.org/install/gpu).

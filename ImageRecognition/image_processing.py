@@ -235,6 +235,6 @@ def run(img_path, guess_type):
     print("\n\nSudoku:")
     solver.print_grid(sudoku)
     solved, backtracks = solver.solve(sudoku, 0, guess_type, False)
-    print("Solved = %s, Backtracks =  %d" % (solved, backtracks))
     solver.print_grid(sudoku)
+    print("Solved = %s, Backtracks =  %d" % (solved, backtracks))
     print("Image recognition finished.")

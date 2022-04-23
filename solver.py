@@ -10,7 +10,8 @@ from guess_generator import get_order_by_most_common, get_order_by_least_common,
 
 def solve(grid, backtracks, guess_method, randomise_search=False):
     """
-    Sudoku Solver
+    Sudoku Solver, based off of:
+    Credit: techwithtim @  https://github.com/techwithtim/Sudoku-GUI-Solver
     :param grid:
     :param backtracks:
     :param guess_method: expects a method that returns an array of numbers 1 through 9.
@@ -110,6 +111,12 @@ def find_random_empty_square(grid):
 
 
 def parallelize_dataframe(df, func):
+    """
+    Credit: https://www.kaggle.com/code/yashchoudhary/deep-sudoku-solver-multiple-approaches/notebook
+    :param df:
+    :param func:
+    :return:
+    """
     from multiprocessing import Pool
     num_partitions = len(df)
     num_cores = 4
@@ -170,6 +177,3 @@ def run(quiz_count, repetitions_per_quiz, guess_method, randomise_search):
 
     avg_backtracks = total_backtracks / (repetitions_per_quiz * len(quizzes))
     print("Average backtracks for all = " + str(avg_backtracks))
-
-
-# TODO: Use the 3m puzzle set as it includes difficulty ratings + more
