@@ -65,6 +65,11 @@ unsolvable_grid = [
 
 
 def get_grids(amount):
+    """
+    Load grids from "sudoku.csv" as a two 9x9 arrays, one for 'quizzes' and one for 'solutions'
+    :param amount:
+    :return: quizzes, solutions
+    """
     quizzes = np.zeros((amount, 81), np.int32)
     solutions = np.zeros((amount, 81), np.int32)
     total = 0
@@ -84,6 +89,11 @@ def get_grids(amount):
 
 
 def get_panda_grids(amount):
+    """
+    Load grids from "sudoku.csv" as a pandas dataframe.
+    :param amount:
+    :return:
+    """
     data = pd.read_csv("sudoku.csv", nrows=amount, skip_blank_lines=True)
     try:
         data = pd.DataFrame({"quizzes": data["puzzle"], "solutions": data["solution"]})

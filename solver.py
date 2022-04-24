@@ -113,9 +113,6 @@ def find_random_empty_square(grid):
 def parallelize_dataframe(df, func):
     """
     Credit: https://www.kaggle.com/code/yashchoudhary/deep-sudoku-solver-multiple-approaches/notebook
-    :param df:
-    :param func:
-    :return:
     """
     from multiprocessing import Pool
     num_partitions = len(df)
@@ -129,6 +126,9 @@ def parallelize_dataframe(df, func):
 
 
 def solve_and_verify(data):
+    """
+    Credit: https://www.kaggle.com/code/yashchoudhary/deep-sudoku-solver-multiple-approaches/notebook
+    """
     total_backtracks = 0
     for row in data.iterrows():
         backtracks = 0
@@ -140,6 +140,9 @@ def solve_and_verify(data):
 
 
 def run_multithreaded(quiz_count):
+    """
+    Credit: https://www.kaggle.com/code/yashchoudhary/deep-sudoku-solver-multiple-approaches/notebook
+    """
     # TODO: Specify guess type
     data = grids.get_panda_grids(quiz_count)
     results = parallelize_dataframe(data.head(quiz_count), solve_and_verify)

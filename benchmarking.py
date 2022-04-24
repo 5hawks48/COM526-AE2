@@ -59,6 +59,11 @@ def benchmark_time(quiz_count,
 
 
 def benchmark_multithread(quiz_count):
+    """
+    Attempt to solve n grids using the multi threaded solver. Results are saved to "banchmarks.csv".
+    :param quiz_count:
+    :return:
+    """
     import time
     outputs = [0 for _ in range(8)]
     outputs[0] = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
