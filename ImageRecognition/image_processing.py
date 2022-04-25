@@ -14,14 +14,18 @@ def display_image(name, img):
     cv2.destroyWindow(name)
 
 
-def invert_and_dilate(img):
+def invert_and_dilate(img, skip_dilate=False):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Note that kernel sizes must be positive and odd and the kernel must be square.
     process = cv2.GaussianBlur(img.copy(), (9, 9), 0)
     process = cv2.adaptiveThreshold(process, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     process = cv2.bitwise_not(process, process)
-    kernel = np.array([[0., 1., 0.], [1., 1., 1.], [0., 1., 0.]], np.uint8)
-    process = cv2.dilate(process, kernel)
+    if not skip_dilate:
+        # This is only used for sudoku processing and not for cell processing
+        # np.uint8 will wrap.
+        # For example, 235+30 = 9.
+        kernel = np.array([[0., 1., 0.], [1., 1., 1.], [0., 1., 0.]], np.uint8)
+        process = cv2.dilate(process, kernel)
     return process
 
 
@@ -127,10 +131,10 @@ def create_cells(img):
     grid = cv2.cvtColor(grid, cv2.COLOR_BGR2GRAY)
 
     # Adaptive thresholding the cropped grid and inverting it
-    # grid = cv2.bitwise_not(grid, grid)
+    grid = cv2.bitwise_not(grid, grid)
 
     # Adaptive thresholding the cropped grid and inverting it
-    grid = cv2.bitwise_not(cv2.adaptiveThreshold(grid, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 101, 1))
+    # grid = cv2.bitwise_not(cv2.adaptiveThreshold(grid, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 101, 1))
 
     display_image("create_image_grid", grid)
 
@@ -201,7 +205,8 @@ def scale_and_centre(img, size, margin=20, background=0):
 def extract(img):
     processed_sudoku = invert_and_dilate(img)
     corners = find_corners(processed_sudoku)
-    display_image("corners", cv2.drawContours(img, corners, -1, (0, 255, 0), 10))
+    temp = cv2.drawContours(img, corners, -1, (0, 255, 0), 10)
+    display_image("corners", temp)
     transformed = crop_and_warp(img, corners)
     display_image("transformed", transformed)
     cropped = r'ImageRecognition/cropped_img.png'
@@ -235,6 +240,6 @@ def run(img_path, guess_type):
     print("\n\nSudoku:")
     solver.print_grid(sudoku)
     solved, backtracks = solver.solve(sudoku, 0, guess_type, False)
+    print("\nSolved = %s, Backtracks =  %d" % (solved, backtracks))
     solver.print_grid(sudoku)
-    print("Solved = %s, Backtracks =  %d" % (solved, backtracks))
-    print("Image recognition finished.")
+    print("\nImage recognition finished.")
